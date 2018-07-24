@@ -28,9 +28,6 @@ def extract_info_from_read_name(df):
     d = df.copy()
     d['NAME_MIR'] = d.NAME.apply(lambda x: x.split("_")[1])
     d['NAME_HP'] = d.NAME.apply(lambda x: x.split("_")[0])
-    d['ADD'] = d.NAME.apply(lambda x: x.split("_")[5].replace('add:',''))
-    d['MUT'] = d.NAME.apply(lambda x: x.split("_")[4].replace('mut:',''))
-    d['LEN_READ'] = d.SEQUENCE.str.len()
 
     pos = d.NAME.apply(lambda x: x.split("_")[2].split(":")[0]) # pos of miRNA in Hairpin (without gain or loss)
     shift = d.NAME.apply(lambda x: x.split("_")[3].split(":")[0]) # substract shift
@@ -54,17 +51,17 @@ def evaluate(df, col, tool): # col - which column to compare: hairpin or mirna n
 
     d.loc[d.MIRNA.isnull(), 'ALIGNED'] = 'NA'
     d.loc[d.MIRNA==d[col], 'GOOD_ALIGNED'] = 'yes'
-    d.loc[d.START!=d.POS,'GOOD_ALIGNED'] = 'no'
+    #d.loc[d.START!=d.POS,'GOOD_ALIGNED'] = 'no'
 
-    #Multi-aligned reads: Take the first one sort it and mark it as multi-yes or multi-no
+    #Multi-aligned reads: Sort reads, take the first one among duplicates and mark it as multi-yes or multi-no
     d = d.sort_values(['NAME', 'GOOD_ALIGNED'],ascending=[1,0])
     d.loc[d.NAME.duplicated(keep=False), 'ALIGNED'] = 'multi'
     d.loc[(~d.NAME.duplicated()).multiply(d.ALIGNED=='multi'), 'ALIGNED'] = 'multi-' + d.loc[(~d.NAME.duplicated()).multiply(d.ALIGNED=='multi'),'GOOD_ALIGNED']
 
+    # ALIGNED and GOOD_ALIGNED joined into one column (ALIGNED), values: yes, no, multi-yes, multi-no, NA
+    d.loc[(d.ALIGNED=='yes') & (d.GOOD_ALIGNED=='no'),'ALIGNED'] = 'no' # ALIGNED but not GOOD_ALIGNED = no
 
-    #columns = ['NAME', 'NAME_MIR', 'GOOD_ALIGNED', 'MIRNA', 'ADD', 'MUT', 'LEN_READ', 'QUALS', 'ALIGNED', 'TOOL']
     columns = ['NAME', 'ALIGNED', 'TOOL']
-
     return d.loc[~d.NAME.duplicated(),columns]
 
 
@@ -96,7 +93,7 @@ def quagmir(simFile, resFile, tool='quagmir'):
 
     allDF = pd.merge(reads, results, how='left', on=['SEQUENCE'])
     allDF = extract_info_from_read_name(allDF)
-    allDF['START'] = allDF.POS - 1
+    allDF['START'] = allDF.POS
 
     return evaluate(allDF, 'NAME_MIR', tool)
 
@@ -122,11 +119,12 @@ def sam(simFile, resFile, tool): # star and razers
     reads = fastq_to_df(simFile)
 
     results = pd.read_csv(resFile, sep='\t', comment='@', header=None)
-    results = results[[0,2,4]]
-    results.columns=['NAME', 'MIRNA', 'START']
+    results = results[[0,2,3]]
+    results.columns = ['NAME', 'MIRNA', 'START']
     results = results.drop_duplicates()
 
     allDF = pd.merge(reads, results, how='left', on=['NAME'])
+    allDF.START = allDF.START - 1
     allDF = extract_info_from_read_name(allDF)
 
     return evaluate(allDF, 'NAME_HP', tool)
@@ -134,26 +132,26 @@ def sam(simFile, resFile, tool): # star and razers
 
 #---------Read files and score algorithms----------------
 
-files=pd.read_csv('mirna_files1.csv')
+files = pd.read_csv('mirna_files.csv')
 
-df=pd.DataFrame(columns = ['NAME', 'ALIGNED', 'TOOL'])
+df = pd.DataFrame(columns = ['NAME', 'ALIGNED', 'TOOL'])
 
+quag_dir = ''
+micr_dir = ''
+star_dir = ''
+mira_dir = ''
+razr_dir = ''
 
-quag_dir = 'quagmir/'
-micr_dir = 'microrazers/'
-star_dir = 'star/'
-mira_dir = 'miraligner/'
-razr_dir = 'razers3/'
 
 for col, row in files.iterrows():
-    quag = quagmir(row.simReads, quag_dir+row.quagmir, 'quagmir;' + row.simReads.split('.')[0])
-    mcr = microrazers(row.simReads, micr_dir+row.microrazers, 'microrazers;' + row.simReads.split('.')[0])
-    star = sam(row.simReads, star_dir+row.star, 'star;'+ row.simReads.split('.')[0])
-    mir = miraligner(row.simReads, mira_dir+row.miraligner, 'miraligner;'+ row.simReads.split('.')[0])
-    razr = sam(row.simReads, razr_dir+row.razers3, 'razers3;'+ row.simReads.split('.')[0])
-    df = pd.concat([df,quag,mcr,star,mir], ignore_index=True)
+    quag = quagmir(row.simReads, quag_dir+row.quagmir, 'quagmir;' + row.simReads.split('/').pop().split('.')[0])
+    mcr = microrazers(row.simReads, micr_dir+row.microrazers, 'microrazers;' + row.simReads.split('/').pop().split('.')[0])
+    star = sam(row.simReads, star_dir+row.star, 'star;'+ row.simReads.split('/').pop().split('.')[0])
+    mir = miraligner(row.simReads, mira_dir+row.miraligner, 'miraligner;'+ row.simReads.split('/').pop().split('.')[0])
+    razr = sam(row.simReads, razr_dir+row.razers3, 'razers3;'+ row.simReads.split('/').pop().split('.')[0])
+    df = pd.concat([df,quag,mcr,star,mir,razr], ignore_index=True)
 
 
 #------Write results in file-----------
 
-df.to_csv('test2.tsv', index=False, sep='\t', na_rep='NA')
+df.to_csv('test.tsv', index=False, sep='\t', na_rep='NA')
