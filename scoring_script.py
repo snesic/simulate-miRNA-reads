@@ -136,11 +136,11 @@ files = pd.read_csv('mirna_files.csv')
 
 df = pd.DataFrame(columns = ['NAME', 'ALIGNED', 'TOOL'])
 
-quag_dir = ''
-micr_dir = ''
-star_dir = ''
-mira_dir = ''
-razr_dir = ''
+quag_dir = 'Results/quagmir_amb/no_pcr/'
+micr_dir = 'Results/microrazers/no_pcr/'
+star_dir = 'Results/Star_noGTF_noParameters/no_pcr/'
+mira_dir = 'Results/miraligner/no_pcr/'
+razr_dir = 'Results/razers3/no_pcr/'
 
 
 for col, row in files.iterrows():
