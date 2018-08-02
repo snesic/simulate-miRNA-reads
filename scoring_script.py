@@ -51,7 +51,7 @@ def evaluate(df, col, tool): # col - which column to compare: hairpin or mirna n
 
     d.loc[d.MIRNA.isnull(), 'ALIGNED'] = 'NA'
     d.loc[d.MIRNA==d[col], 'GOOD_ALIGNED'] = 'yes'
-    #d.loc[d.START!=d.POS,'GOOD_ALIGNED'] = 'no'
+    d.loc[d.START!=d.POS,'GOOD_ALIGNED'] = 'no'
 
     #Multi-aligned reads: Sort reads, take the first one among duplicates and mark it as multi-yes or multi-no
     d = d.sort_values(['NAME', 'GOOD_ALIGNED'],ascending=[1,0])
@@ -129,6 +129,20 @@ def sam(simFile, resFile, tool): # star and razers
 
     return evaluate(allDF, 'NAME_HP', tool)
 
+def sRNAbench(simFile, resFile, tool): # star and razers
+
+    reads = fastq_to_df(simFile)
+    resFileH = resFile + '/hairpin.parsed'
+
+    hairpin =  pd.read_csv(resFileH, sep='\t', header=None)
+    hairpin = hairpin[[2,3,4]]
+    hairpin.columns = ['MIRNA', 'START', 'SEQUENCE']
+
+    allDF = pd.merge(reads, hairpin, how='left', on=['SEQUENCE'])
+    allDF = extract_info_from_read_name(allDF)
+
+    return evaluate(allDF, 'NAME_HP', tool)
+
 
 #---------Read files and score algorithms----------------
 
@@ -136,11 +150,12 @@ files = pd.read_csv('mirna_files.csv')
 
 df = pd.DataFrame(columns = ['NAME', 'ALIGNED', 'TOOL'])
 
-quag_dir = 'Results/quagmir_amb/no_pcr/'
-micr_dir = 'Results/microrazers/no_pcr/'
-star_dir = 'Results/Star_noGTF_noParameters/no_pcr/'
-mira_dir = 'Results/miraligner/no_pcr/'
-razr_dir = 'Results/razers3/no_pcr/'
+quag_dir = 'quagmir_amb/no_pcr/'
+micr_dir = 'microrazers/no_pcr/'
+star_dir = 'Star_noGTF_noParameters/no_pcr/'
+mira_dir = 'miraligner/no_pcr/'
+razr_dir = 'razers3/no_pcr/'
+srna_dir = 'sRNAbench/'
 
 
 for col, row in files.iterrows():
@@ -149,7 +164,9 @@ for col, row in files.iterrows():
     star = sam(row.simReads, star_dir+row.star, 'star;'+ row.simReads.split('/').pop().split('.')[0])
     mir = miraligner(row.simReads, mira_dir+row.miraligner, 'miraligner;'+ row.simReads.split('/').pop().split('.')[0])
     razr = sam(row.simReads, razr_dir+row.razers3, 'razers3;'+ row.simReads.split('/').pop().split('.')[0])
-    df = pd.concat([df,quag,mcr,star,mir,razr], ignore_index=True)
+    srna = sRNAbench(row.simReads, srna_dir+row.sRNAbench, 'sRNAbench;'+ row.simReads.split('/').pop().split('.')[0])
+
+    df = pd.concat([df,quag,mcr,star,mir,razr,srna], ignore_index=True)
 
 
 #------Write results in file-----------
