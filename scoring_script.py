@@ -150,25 +150,18 @@ files = pd.read_csv('mirna_files.csv')
 
 df = pd.DataFrame(columns = ['NAME', 'ALIGNED', 'TOOL'])
 
-quag_dir = 'quagmir_amb/no_pcr/'
-micr_dir = 'microrazers/no_pcr/'
-star_dir = 'Star_noGTF_noParameters/no_pcr/'
-mira_dir = 'miraligner/no_pcr/'
-razr_dir = 'razers3/no_pcr/'
-srna_dir = 'sRNAbench/'
-
 
 for col, row in files.iterrows():
-    quag = quagmir(row.simReads, quag_dir+row.quagmir, 'quagmir;' + row.simReads.split('/').pop().split('.')[0])
-    mcr = microrazers(row.simReads, micr_dir+row.microrazers, 'microrazers;' + row.simReads.split('/').pop().split('.')[0])
-    star = sam(row.simReads, star_dir+row.star, 'star;'+ row.simReads.split('/').pop().split('.')[0])
-    mir = miraligner(row.simReads, mira_dir+row.miraligner, 'miraligner;'+ row.simReads.split('/').pop().split('.')[0])
-    razr = sam(row.simReads, razr_dir+row.razers3, 'razers3;'+ row.simReads.split('/').pop().split('.')[0])
-    srna = sRNAbench(row.simReads, srna_dir+row.sRNAbench, 'sRNAbench;'+ row.simReads.split('/').pop().split('.')[0])
+    quag = quagmir(row.simReads, row.quagmir, 'quagmir;' + row.simReads.split('/').pop().split('.')[0])
+    mcr = microrazers(row.simReads, row.microrazers, 'microrazers;' + row.simReads.split('/').pop().split('.')[0])
+    star = sam(row.simReads, row.star, 'star;'+ row.simReads.split('/').pop().split('.')[0])
+    mir = miraligner(row.simReads, row.miraligner, 'miraligner;'+ row.simReads.split('/').pop().split('.')[0])
+    razr = sam(row.simReads, row.razers3, 'razers3;'+ row.simReads.split('/').pop().split('.')[0])
+    srna = sRNAbench(row.simReads, row.sRNAbench, 'sRNAbench;'+ row.simReads.split('/').pop().split('.')[0])
 
     df = pd.concat([df,quag,mcr,star,mir,razr,srna], ignore_index=True)
 
 
 #------Write results in file-----------
 
-df.to_csv('test.tsv', index=False, sep='\t', na_rep='NA')
+df.to_csv('miRNAbenchmark.tsv', index=False, sep='\t', na_rep='NA')
