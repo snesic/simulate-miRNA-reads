@@ -8,7 +8,7 @@ args <- commandArgs(trailingOnly = TRUE)
 data <- read_tsv(args[1]) # PATH TO FILE
 colnames(data) <- c('name','aligned','tool')
 
-data = data %>% separate(tool, c("tool", "simulation"), ";")  #%>%
+data = data %>% separate(tool, c("tool", "simulation"), ";")
 data$simulation = gsub("test_","",data$simulation, ignore.case = T)
 
 data = data %>% mutate(aligned=case_when(is.na(.$aligned) ~ "NA",
