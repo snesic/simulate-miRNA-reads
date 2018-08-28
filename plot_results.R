@@ -8,14 +8,14 @@ args <- commandArgs(trailingOnly = TRUE)
 data <- read_tsv(args[1]) # PATH TO FILE
 colnames(data) <- c('name','aligned','tool')
 
-data = data %>% separate(tool, c("tool", "simulation"), ";")
-data$simulation = gsub("test_","",data$simulation, ignore.case = T)
+data = data %>% separate(tool, c("tool", "simulation"), ";") %>% 
+                mutate(aligned=case_when(is.na(.$aligned) ~ "NA",
+                           .$aligned=="yes" ~ "Yes",
+                           .$aligned=="no"  ~ "No",
+                           .$aligned=="multi-no"  ~ "multi-no",
+                           .$aligned=="multi-yes"  ~ "multi-yes"))
 
-data = data %>% mutate(aligned=case_when(is.na(.$aligned) ~ "NA",
-                                         .$aligned=="yes" ~ "Yes",
-                                         .$aligned=="no"  ~ "No",
-                                         .$aligned=="multi-no"  ~ "multi-no",
-                                         .$aligned=="multi-yes"  ~ "multi-yes"))
+data$simulation = gsub("test_","",data$simulation, ignore.case = T)
 
 ## Subsets from data
 
